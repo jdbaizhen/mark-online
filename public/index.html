@@ -13,5 +13,21 @@
     </noscript>
     <div id="app"></div>
     <!-- built files will be auto injected -->
+    <script type="text/javascript">
+      var doc = document;
+      var docEl = doc.documentElement,
+          resizeEvt = 'orientationchange' in window ? 'orientationchange' : 'resize',
+          recalc = function () {
+              var clientWidth = docEl.clientWidth;
+              var clientHeight = docEl.clientHeight;
+              if (!clientWidth) return;
+              docEl.style.fontSize = 25*(clientWidth/480) + 'px';
+              //原始比例
+              var proportion = clientHeight / clientWidth;
+              document.body.style.height = clientWidth * proportion + "px";
+          };
+      window.addEventListener(resizeEvt, recalc, false);
+      doc.addEventListener('DOMContentLoaded', recalc, false);
+  </script>
   </body>
 </html>
