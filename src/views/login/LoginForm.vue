@@ -7,7 +7,7 @@
         </Input>
     </div>
     <div style="margin-top: 20px">
-        <Input placeholder="密码" type="password" size="large" v-model="loginForm.userPassword">
+        <Input placeholder="密码" type="password" size="large" v-model="loginForm.userPassword" @keyup.enter="loginCookie">
             <Icon type="md-lock" slot="prefix" />
         </Input>
     </div>
@@ -85,7 +85,7 @@ export default {
             setSession('privilegeList', data.userRoleList[0].privilegeList)
             setSession('roleName', data.userRoleList[0].roleName)
           }
-          this.$router.push({name: 'project'})
+          this.$router.push({name: 'projectlist'})
         } else {
           this.$Message.error(res.data.message)
         }

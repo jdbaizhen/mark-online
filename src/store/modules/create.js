@@ -1,31 +1,48 @@
-import { axiosFormat, dataFormat } from '@/utils/util.js'
+import { axiosFormat } from '@/utils/util.js'
 import URL from '@/api/create.js'
 const Create = {
   state: {
     current: 0,
     projectId: null,
-    configForm: {
-      projectName: '',
-      cutOffDate: '',
-      taskPictureNumber: '',
-      picturePrice: '',
-      projectProduce: '',
-      markGoods: []
-    },
-    projectTypes: []
+    projectPropertyVOList: [],
+    projectTypes: [],
+    labelToolInfoList: [],
+    pictureInfo: [],
+    labelTypeId: 1
   },
   mutations: {
-    updateMarkGoods (state, newMarkGoods) {
-      state.configForm.markGoods = newMarkGoods
+    updateMarkGoods (state, newVOList) {
+      state.projectPropertyVOList = newVOList
     },
     updateCurrent (state) {
       state.current += 1
+    },
+    finishCurrent (state) {
+      state.current = 0
+    },
+    updateProjectId (state, projectId) {
+      state.projectId =projectId
     },
     confirmCurrent (state, data) {
       state.current = data.projectStep
       state.projectId = data.projectId
     },
-
+    updateLabelTools (state, newValue) {
+      if (newValue instanceof Array) {
+        state.labelToolInfoList = newValue
+      } else {
+        state.labelToolInfoList = [newValue]
+      }
+    },
+    clearLabelTools (state) {
+      state.labelToolInfoList = []
+    },
+    updatePictureInfo (state, pictureList) {
+      state.pictureInfo = pictureList
+    },
+    updateLabelTypeId (state, id) {
+      state.labelTypeId = id
+    }
   },
   actions: {
     createSchedule (context) {
@@ -40,9 +57,6 @@ const Create = {
       })
     },
     updateConfigForm (context, newConfigForm) {
-      // for (let key in newConfigForm) {
-      //   state.configForm[key] = newConfigForm[key]
-      // }
       let data = {
         projectExpiryDate: newConfigForm.cutOffDate,
         projectName: newConfigForm.projectName,
@@ -50,11 +64,7 @@ const Create = {
         projectUnitPrice: newConfigForm.picturePrice,
         projectIntroduceInfo: newConfigForm.projectProduce
       }
-      axiosFormat(URL.saveProjectInfo, 'post', data).then( res => {
-        if (res.data.result) {
-          context.commit('updateCurrent')
-        }
-      })
+      return axiosFormat(URL.saveProjectInfo, 'post', data)
     },
     getAllMarkUtils (context) {
       axiosFormat(URL.getMarkUtils, 'get').then(res => {
@@ -63,9 +73,22 @@ const Create = {
           context.state.projectTypes = projectTypes
         }
       }) 
+    },
+    addProjectStepTwo (context) {
+      if (context.state.projectId !== null && context.state.labelToolInfoList.length > 0 && context.state.pictureInfo.length > 0 && context.state.projectPropertyVOList.length > 0) {
+        let data = {
+          projectId: context.state.projectId,
+          labelToolId: context.state.labelToolInfoList,
+          pictureInfo: context.state.pictureInfo,
+          projectPropertyVOList: context.state.projectPropertyVOList,
+          labelTypeId: context.state.labelTypeId
+        }
+        return axiosFormat(URL.addProjectStepTwo, 'post', data)
+      }
     }
   },
-  getters: {}
+  getters: {
+  }
 }
 
 export default Create

@@ -5,39 +5,46 @@
       </aside>
       <section class="mark-container">
         <svg ref="svg" class="svg-container"
-          :width="img.width*scale" :height="img.height*scale"
-          :style="`background-image:url(${img.url});left:${svgLeft};top:${svgTop}`"
+          :width="mark.imgInfo.width*scale" :height="mark.imgInfo.height*scale"
+          :style="`background-image:url(${mark.imgInfo.imagePath});left:${svgLeft};top:${svgTop}`"
           :cursor="markType===4?'move':markType===1?'crosshair':''"
         >
           <v-line :lineObj="lineObj"></v-line>
-          <v-markrect :svgColor="svgColor" :opacityNumber="opacityNumber" :scale="scale" :rects="rects" :fixPoints="fixPoints" :markType="markType" :activeRect="activeRect"></v-markrect>
-          <v-markpolygon :svgColor="svgColor" :opacityNumber="opacityNumber" :polygons="polygons" :markType="markType" :polygonsStrArr="polygonsStrArr" :scale="scale" :activePolygon="activePolygon" @changeActivePolygon="changeActivePolygon"></v-markpolygon>
+          <v-markrect :svgColor="markType===1?svgColor:'yellow'" :opacityNumber="opacityNumber" :scale="scale" :rects="rects" :fixPoints="fixPoints" :markType="markType" :activeRect="activeRect"></v-markrect>
+          <v-markpolygon :svgColor="markType===2?svgColor:'skyblue'" :opacityNumber="opacityNumber" :polygons="polygons" :markType="markType" :polygonsStrArr="polygonsStrArr" :scale="scale" :activePolygon="activePolygon" @changeActivePolygon="changeActivePolygon"></v-markpolygon>
           <v-markdot :svgColor="svgColor" :dots="dots" :scale="scale" :markType="markType"></v-markdot>
         </svg>
       </section>
       <aside class="aside-info">
-        <v-markinfoshow :rects="rects" :polygons="polygons" :dots="dots"/>
+        <v-markinfoshow v-if="taskStatus==1" :rects="rects" :polygons="polygons" :dots="dots" :scale="scale"/>
+        <v-markinfofix v-else-if="taskStatus==4" :rects="rects" :activeRect="activeRect"/>
       </aside>
     </section>
 </template>
 
 <script>
 import vm from '@/utils/vm'
-import imgUrl from '@/assets/test.jpg'
-import MarkOperate from './component/MarkOperate.vue'
+import { mapState } from 'vuex'
+import MarkOperate from './component/MarkOperate.vue' 
 import MarkLine from './component/utils/Line.vue'
 import MarkInfoShow from './component/MarkInfoShow.vue'
+import MarkInfoFix from './component/MarkInfoFix.vue'
 import MarkDot from './component/MarkDot.vue'
 import MarkPolygon from './component/MarkPolygon.vue'
 import MarkRect from './component/MarkRect.vue'
 export default {
+  props: {
+    taskStatusId: Number,
+    imgData: Object
+  },
   components: {
     'v-markoperate': MarkOperate,
     'v-line': MarkLine,
     'v-markinfoshow': MarkInfoShow,
     'v-markdot': MarkDot,
     'v-markpolygon': MarkPolygon,
-    'v-markrect': MarkRect
+    'v-markrect': MarkRect,
+    'v-markinfofix': MarkInfoFix
   },
   data () {
     return {
@@ -45,7 +52,6 @@ export default {
         图层相关
       */
       img: { // 图片信息
-        url: imgUrl,
         width: 1920,
         height: 1080
       },
@@ -122,18 +128,22 @@ export default {
     })
     // 矩形拖拽初始化
     vm.$on('dragRectStart', (index, event) => {
-      if (this.rects[index].x !== undefined && this.markType === 1) {
-        this.moveInitPoints = {
-          index: index,
-          gapX: event.offsetX, // 计算鼠标位置和矩形框左上角的差值
-          gapY: event.offsetY,
-          x: this.rects[index].x,
-          y: this.rects[index].y
+      try {
+        if (this.rects[index].x !== undefined && this.markType === 1) {
+          this.moveInitPoints = {
+            index: index,
+            gapX: event.offsetX, // 计算鼠标位置和矩形框左上角的差值
+            gapY: event.offsetY,
+            x: this.rects[index].x,
+            y: this.rects[index].y
+          }
+          this.activeRect = index
+          this.isMove = true
+          this.isDrag = false
         }
-        this.activeRect = index
-        this.isMove = true
-        this.isDrag = false
-      }
+      } catch (e) {
+        console.log(e.message)
+      }     
     })
     // 矩形移动完成
     vm.$on('dragRectEnd', () => {
@@ -144,31 +154,44 @@ export default {
     })
     // 矩形选择
     vm.$on('changeActiveRect', index => {
-      if (this.markType === 1) {
+      //if (this.markType === 1) {
         this.activeRect = index
         this.fixPointsHandle(index)
-      }
+      //}
+    })
+    vm.$on('changeActivePolygon', index => {
+      //if (this.markType === 1) {
+        this.activePolygon = index
+      //}
     })
     vm.$on('delete', () => {
       /**
        * 矩形删除
        */
       if (this.markType === 1 && this.rects.length > 0) {
-        if (confirm('确认删除矩形吗?')) {
-          this.rects.splice(this.activeRect, 1)
-          this.activeRect = -1
-        }
+        this.$Modal.confirm({
+            title: '确认删除该矩形？？？',
+            content: '<p>删除后不可还原！！！</p>',
+            onOk: () => {
+                this.rects.splice(this.activeRect, 1)
+                this.activeRect = -1
+            }
+        })
       }
       /*
         多边形删除
       */
       if (this.markType === 2 && this.polygons.length > 0) {
         if (this.activePolygon !== undefined) {
-          if (confirm(`确认删除${this.activePolygon}号多边形?`)) {
-            this.polygons.splice(this.activePolygon, 1)
-          }
+          this.$Modal.confirm({
+            title: `确认删除${this.activePolygon}号多边形？？？`,
+            content: '<p>删除后不可还原！！！</p>',
+            onOk: () => {
+                this.polygons.splice(this.activePolygon, 1)
+            }
+        })
         } else {
-          alert('请选择多边形')
+          this.$Message.warning('请选择多边形')
         }
       }
       /**
@@ -182,6 +205,18 @@ export default {
       if (this.markType === 2) {
         this.activePolygon = this.polygons.length
       }
+    })
+    /**
+     * 删除所有标注数据
+     */
+    vm.$on('deleteAllMarkInfo', () => {
+      console.log('deleteAllMarkInfo')
+      this.dots = []
+      this.rects = []
+      this.polygons = []
+      this.activeDot = 0
+      this.activeRect = -1
+      this.activePolygon = 0
     })
   },
   mounted () {
@@ -203,11 +238,11 @@ export default {
         this.isMouseDown = true
         this.initPoints.initX = x
         this.initPoints.initY = y
-        let rectObj = {x: 0, y: 0, w: 0, h: 0}
+        let rectObj = {x: 0, y: 0, w: 0, h: 0, id: '', status: ''}
         this.rects.push(rectObj)
       }
       // 标注多边形
-      if (this.markType === 2) {
+      else if (this.markType === 2) {
         let index = this.activePolygon
         if (this.polygons[index] === undefined) {
           this.polygons.splice(index, 0, [])
@@ -215,11 +250,11 @@ export default {
         this.polygons[index].push(point)
       }
       // 标注点
-      if (this.markType === 3) {
+      else if (this.markType === 3) {
         this.dots.push(point)
       }
       // 拖拽图片
-      if (this.markType === 4) {
+      else if (this.markType === 4) {
         this.isMouseDown = true
         // 鼠标相对于svg的位置差值
         this.initPos = {
@@ -256,20 +291,29 @@ export default {
         let index = this.rects.length - 1
         let initX = this.initPoints.initX
         let initY = this.initPoints.initY
+        let obj = {
+          x: 0,
+          y: 0,
+          w: 0,
+          h: 0,
+          id: this.rects[index].id,
+          status: this.rects[index].status
+        }
         if (x1 > initX) {
-          this.rects[index].x = initX / scale
-          this.rects[index].w = (x1 - initX) / scale
+          obj.x = initX / scale
+          obj.w = (x1 - initX) / scale
         } else {
-          this.rects[index].x = x1 / scale
-          this.rects[index].w = (initX - x1) / scale
+          obj.x = x1 / scale
+          obj.w = (initX - x1) / scale
         }
         if (y1 > initY) {
-          this.rects[index].y = initY / scale
-          this.rects[index].h = (y1 - initY) / scale
+          obj.y = initY / scale
+          obj.h = (y1 - initY) / scale
         } else {
-          this.rects[index].y = y1 / scale
-          this.rects[index].h = (initY - y1) / scale
+          obj.y = y1 / scale
+          obj.h = (initY - y1) / scale
         }
+        this.rects.splice(index, 1, obj)
       }
       // 移动矩形
       if (this.markType === 1 && this.isMove) {
@@ -299,7 +343,7 @@ export default {
         let index = this.rects.length - 1
         if (this.rects[index].w < 30 && this.rects[index].h < 30) {
           this.rects.pop()
-          alert('矩形框最小为30*30像素')
+          this.$Message.error('矩形框最小为30*30像素')
         } else {
           this.fixPointsHandle(index)
         }
@@ -309,7 +353,7 @@ export default {
       if (this.markType === 4) {
         this.isMouseDown = false
       }
-    }, false) // 开启捕获
+    }, true) // 开启捕获
     /**
      *  监听多边形点的删除
      */
@@ -331,6 +375,7 @@ export default {
         this.scale -= 0.02
       }
     })
+    this.initMarkInfo(this.imgData)
   },
   methods: {
     // 更改标注类型
@@ -349,87 +394,97 @@ export default {
      */
     // 为矩形增加八个拖拽点
     fixPointsHandle (index) {
-      this.activeRect = index
-      let pointData = this.rects[index]
-      let leftTop = { fixedX: pointData.x, fixedY: pointData.y }
-      let centerTop = { fixedX: pointData.x + (pointData.w) / 2, fixedY: pointData.y }
-      let rightTop = { fixedX: pointData.x + pointData.w, fixedY: pointData.y }
-      let centerLeft = { fixedX: pointData.x, fixedY: pointData.y + (pointData.h) / 2 }
-      let centerRight = { fixedX: pointData.x + pointData.w, fixedY: pointData.y + (pointData.h) / 2 }
-      let leftBottom = { fixedX: pointData.x, fixedY: pointData.y + pointData.h }
-      let centerBottom = { fixedX: pointData.x + (pointData.w) / 2, fixedY: pointData.y + pointData.h }
-      let rightBottom = { fixedX: pointData.x + pointData.w, fixedY: pointData.y + pointData.h }
-      let fixPointArr = [ leftTop, centerTop, rightTop, centerLeft, centerRight, leftBottom, centerBottom, rightBottom ]
-      this.fixPoints = fixPointArr
+      try {
+        this.activeRect = index
+        let pointData = this.rects[index]
+        let leftTop = { fixedX: pointData.x, fixedY: pointData.y }
+        let centerTop = { fixedX: pointData.x + (pointData.w) / 2, fixedY: pointData.y }
+        let rightTop = { fixedX: pointData.x + pointData.w, fixedY: pointData.y }
+        let centerLeft = { fixedX: pointData.x, fixedY: pointData.y + (pointData.h) / 2 }
+        let centerRight = { fixedX: pointData.x + pointData.w, fixedY: pointData.y + (pointData.h) / 2 }
+        let leftBottom = { fixedX: pointData.x, fixedY: pointData.y + pointData.h }
+        let centerBottom = { fixedX: pointData.x + (pointData.w) / 2, fixedY: pointData.y + pointData.h }
+        let rightBottom = { fixedX: pointData.x + pointData.w, fixedY: pointData.y + pointData.h }
+        let fixPointArr = [ leftTop, centerTop, rightTop, centerLeft, centerRight, leftBottom, centerBottom, rightBottom ]
+        this.fixPoints = fixPointArr
+      } catch (e) {
+        console.log(e.message)
+      }
     },
     // 拖拽点更改矩形坐标
     changeRectPoint (xx, yy) {
-      let activeFixPosition = this.activeFixPosition
-      let activeRectIndex = this.activeRect
-      let fixData = this.fixData
-      let scale = this.scale
-      let x = xx / scale
-      let y = yy / scale
-      let fixedObj = {}
-      if (activeFixPosition === 1) { // centerTop
-        fixedObj = {
-          x: fixData.x,
-          y: y < fixData.y + fixData.h ? y : (fixData.y + fixData.h),
-          w: fixData.w,
-          h: y <= (fixData.y + fixData.h) ? fixData.h - (y - fixData.y) : (y - fixData.y - fixData.h)
+      if (this.markType === 1) {
+        let activeFixPosition = this.activeFixPosition
+        let activeRectIndex = this.activeRect
+        let fixData = this.fixData
+        let scale = this.scale
+        let x = xx / scale
+        let y = yy / scale
+        let fixedObj = {}
+        if (activeFixPosition === 1) { // centerTop
+          fixedObj = {
+            x: fixData.x,
+            y: y < fixData.y + fixData.h ? y : (fixData.y + fixData.h),
+            w: fixData.w,
+            h: y <= (fixData.y + fixData.h) ? fixData.h - (y - fixData.y) : (y - fixData.y - fixData.h)
+          }
+        } else if (activeFixPosition === 6) { // centerBottom
+          fixedObj = {
+            x: fixData.x,
+            y: y > fixData.y ? fixData.y : y,
+            w: fixData.w,
+            h: y > fixData.y ? y - fixData.y : (fixData.y - y)
+          }
+        } else if (activeFixPosition === 3) { // leftCenter
+          fixedObj = {
+            x: x < (fixData.x + fixData.w) ? x : (fixData.x + fixData.w),
+            y: fixData.y,
+            w: x < (fixData.x + fixData.w) ? fixData.x + fixData.w - x : x - (fixData.x + fixData.w),
+            h: fixData.h
+          }
+        } else if (activeFixPosition === 4) { // rightCenter
+          fixedObj = {
+            x: x > fixData.x ? fixData.x : x,
+            y: fixData.y,
+            w: x > fixData.x ? x - fixData.x : fixData.x - x,
+            h: fixData.h
+          }
+        } else if (activeFixPosition === 0) { // leftTop
+          fixedObj = {
+            x: x < (fixData.x + fixData.w) ? x : (fixData.x + fixData.w),
+            y: y < (fixData.y + fixData.h) ? y : (fixData.y + fixData.h),
+            w: x < (fixData.x + fixData.w) ? fixData.x + fixData.w - x : x - (fixData.x + fixData.w),
+            h: y < (fixData.y + fixData.h) ? fixData.y + fixData.h - y : y - (fixData.y + fixData.h)
+          }
+        } else if (activeFixPosition === 2) { // rightTop
+          fixedObj = {
+            x: x > fixData.x ? fixData.x : x,
+            y: y > fixData.y + fixData.h ? fixData.y + fixData.h : y,
+            w: x > fixData.x ? x - fixData.x : fixData.x - x,
+            h: y > fixData.y + fixData.h ? y - fixData.h - fixData.y : fixData.h + fixData.y - y
+          }
+        } else if (activeFixPosition === 5) { // leftBottom
+          fixedObj = {
+            x: x < (fixData.x + fixData.w) ? x : (fixData.x + fixData.w),
+            y: y > fixData.y ? fixData.y : y,
+            w: x < (fixData.x + fixData.w) ? fixData.x + fixData.w - x : x - (fixData.x + fixData.w),
+            h: y > fixData.y ? y - fixData.y : fixData.y - y
+          }
+        } else if (activeFixPosition === 7) { // rightBottom
+          fixedObj = {
+            x: x > fixData.x ? fixData.x : x,
+            y: y > fixData.y ? fixData.y : y,
+            w: x > fixData.x ? x - fixData.x : fixData.x - x,
+            h: y > fixData.y ? y - fixData.y : fixData.y - y
+          }
         }
-      } else if (activeFixPosition === 6) { // centerBottom
-        fixedObj = {
-          x: fixData.x,
-          y: y > fixData.y ? fixData.y : y,
-          w: fixData.w,
-          h: y > fixData.y ? y - fixData.y : (fixData.y - y)
-        }
-      } else if (activeFixPosition === 3) { // leftCenter
-        fixedObj = {
-          x: x < (fixData.x + fixData.w) ? x : (fixData.x + fixData.w),
-          y: fixData.y,
-          w: x < (fixData.x + fixData.w) ? fixData.x + fixData.w - x : x - (fixData.x + fixData.w),
-          h: fixData.h
-        }
-      } else if (activeFixPosition === 4) { // rightCenter
-        fixedObj = {
-          x: x > fixData.x ? fixData.x : x,
-          y: fixData.y,
-          w: x > fixData.x ? x - fixData.x : fixData.x - x,
-          h: fixData.h
-        }
-      } else if (activeFixPosition === 0) { // leftTop
-        fixedObj = {
-          x: x < (fixData.x + fixData.w) ? x : (fixData.x + fixData.w),
-          y: y < (fixData.y + fixData.h) ? y : (fixData.y + fixData.h),
-          w: x < (fixData.x + fixData.w) ? fixData.x + fixData.w - x : x - (fixData.x + fixData.w),
-          h: y < (fixData.y + fixData.h) ? fixData.y + fixData.h - y : y - (fixData.y + fixData.h)
-        }
-      } else if (activeFixPosition === 2) { // rightTop
-        fixedObj = {
-          x: x > fixData.x ? fixData.x : x,
-          y: y > fixData.y + fixData.h ? fixData.y + fixData.h : y,
-          w: x > fixData.x ? x - fixData.x : fixData.x - x,
-          h: y > fixData.y + fixData.h ? y - fixData.h - fixData.y : fixData.h + fixData.y - y
-        }
-      } else if (activeFixPosition === 5) { // leftBottom
-        fixedObj = {
-          x: x < (fixData.x + fixData.w) ? x : (fixData.x + fixData.w),
-          y: y > fixData.y ? fixData.y : y,
-          w: x < (fixData.x + fixData.w) ? fixData.x + fixData.w - x : x - (fixData.x + fixData.w),
-          h: y > fixData.y ? y - fixData.y : fixData.y - y
-        }
-      } else if (activeFixPosition === 7) { // rightBottom
-        fixedObj = {
-          x: x > fixData.x ? fixData.x : x,
-          y: y > fixData.y ? fixData.y : y,
-          w: x > fixData.x ? x - fixData.x : fixData.x - x,
-          h: y > fixData.y ? y - fixData.y : fixData.y - y
-        }
+        fixedObj['id'] = this.rects[activeRectIndex].id
+        fixedObj['status'] = this.rects[activeRectIndex].status
+        this.rects.splice(activeRectIndex, 1, fixedObj)
+        this.fixPointsHandle(activeRectIndex)
+      } else {
+        this.$Message.error('左侧栏选择矩形后方可修改')
       }
-      this.rects.splice(activeRectIndex, 1, fixedObj)
-      this.fixPointsHandle(activeRectIndex)
     },
     // 移动矩形位置
     moveRect (moveX, moveY) {
@@ -451,7 +506,9 @@ export default {
         x,
         y,
         w: this.rects[initData.index].w,
-        h: this.rects[initData.index].h
+        h: this.rects[initData.index].h,
+        id: this.rects[initData.index].id,
+        status: this.rects[initData.index].status
       }
       this.rects.splice(initData.index, 1, newObj)
       this.fixPointsHandle(initData.index)
@@ -463,17 +520,53 @@ export default {
       if (this.markType === 2) {
         this.activePolygon = index
       }
+    },
+    /**
+     * 驳回后初始化标注数据
+     */
+    initMarkInfo (ary) {
+      try {
+        let squareInfoRetModelList = ary.squareInfoRetModelList
+        let rect = []
+        squareInfoRetModelList.map((item) => {
+          let obj = {
+            x: item.squareX,
+            y: item.squareY,
+            w: item.squareW,
+            h: item.squareH,
+            id: item.squareId,
+            status: item.squareStatus
+          }
+          rect.push(obj)
+          obj = null
+        })
+        this.rects = rect
+      } catch (e) {
+        this.rects = [] 
+      }
+    }
+  },
+  watch: {
+    /**
+     * 驳回后初始化标注数据
+     */
+    'imgData': function(newData) {
+      this.initMarkInfo(newData)
     }
   },
   computed: {
+    ...mapState(['mark']),
     // 格式化多边形的数据
     'polygonsStrArr': function () {
       let scale = this.scale
-      return this.polygons.map((item, index) => {
+      return this.polygons.map((item) => {
         return item.reduce((prev, next) => {
           return `${prev}${next.x * scale},${next.y * scale} `
         }, '')
       })
+    },
+    'taskStatus': function () {
+      return this.taskStatusId
     }
   }
 }
@@ -497,8 +590,7 @@ export default {
   .mark-container{
     flex: 18;
     position: relative;
-    background: #eee;
-    height: 90vh;
+    background: rgba(0,0,0,0.1);
     overflow: hidden;
     .svg-container{
       position: absolute;
@@ -507,7 +599,7 @@ export default {
   }
   .aside-info{
     flex: 5;
-    background: #efe;
+    border: 1px solid #ddd;
     height: 100%;
   }
 }

@@ -37,7 +37,7 @@
 
 <script>
 import { dateFormat } from '@/utils/util.js'
-import { mapActions } from 'vuex'
+import { mapActions, mapMutations } from 'vuex'
 export default {
   data () {
     return {
@@ -78,7 +78,8 @@ export default {
     }
   },
   methods: {
-    ...mapActions(['updateConfigForm']),
+    ...mapActions(['updateConfigForm', 'getAllMarkUtils']),
+    ...mapMutations(['updateCurrent', 'updateProjectId']),
     getTime () {
       return this.configProjectForm.cutOffDate = dateFormat(this.configProjectForm.cutOffDate)
     },
@@ -86,7 +87,15 @@ export default {
       this.$refs[name].validate((valid) => {
         if (valid) {
           if (confirm("确认提交？")) {
-            this.updateConfigForm(this.configProjectForm)
+            this.updateConfigForm(this.configProjectForm).then(res => {
+              if (res.data.result) {
+                this.updateCurrent()
+                this.getAllMarkUtils()
+                this.updateProjectId(res.data.data)
+              } else {  
+                this.$Message.error(res.data.message)
+              }
+            })
           }
         }
       })

@@ -17,22 +17,22 @@
               label-position="left"
               :label-width="60"
               >
-              <FormItem label='名称' prop="name">
+              <FormItem label='名称' prop="projectMaterialName">
                 <Input v-model="activeName" disabled placeholder='名称'/>
               </FormItem>
-              <FormItem label='描述' prop="description">
-                <Input v-model="activeMarkGoods.description" placeholder='描述'/>
+              <FormItem label='描述' prop="projectMaterialInstruction">
+                <Input v-model="activeMarkGoods.projectMaterialInstruction" placeholder='描述'/>
               </FormItem>
-                <FormItem label='类型' prop="type">
-                  <i-select placeholder="选择类型" v-model="activeMarkGoods.type">
+                <FormItem label='类型' prop="projectMaterialChoose">
+                  <i-select placeholder="选择类型" v-model="activeMarkGoods.projectMaterialChoose">
                     <i-option v-for="(item, index) in attrTypes" :key="index" :value="item.type">{{item.label}}</i-option>
                   </i-select>
                 </FormItem>
-                <FormItem label='属性' prop="attrs">
-                  <Input type="textarea" v-model="activeMarkGoods.attrs" placeholder='属性定义,每个属性之间用/分隔开'/>
+                <FormItem label='属性' prop="projectPropertyName">
+                  <Input type="textarea" v-model="activeMarkGoods.projectPropertyName" placeholder='属性定义,每个属性之间用/分隔开'/>
                 </FormItem>
                 <FormItem style="margin-bottom:0"> 
-                  <Button type="success" @click="submitActiveMarkGoods('activeMarkGoods')" ghost style="margin-right: 20px">确认</Button>
+                  <Button type="success" @click="submitActiveMarkGoods('activeMarkGoods')" ghost style="margin-right: 20px">生成预览</Button>
                   <Button type="primary" @click="deleteActiveMarkGoods" ghost>清空</Button>
                 </FormItem>
             </i-form>
@@ -40,8 +40,8 @@
         </section>
         <section class="footer-operate">
           <h4>效果预览区域</h4>
-          <i-select v-for="(item, index) in markGoods" :key="index" :multiple="item.type==='checkbox'?true:false" :placeholder="item.description">
-            <i-option v-for="(ite, idx) in item.attrs.split('/')" :key="idx" :value="ite">{{ite}}</i-option>
+          <i-select v-for="(item, index) in markGoods" :key="index" :multiple="item.projectMaterialChoose==='checkbox'?true:false" :placeholder="item.projectMaterialInstruction">
+            <i-option v-for="(ite, idx) in item.projectPropertyName.split('/')" :key="idx" :value="ite">{{ite}}</i-option>
           </i-select>
         </section>
       </section>
@@ -64,22 +64,22 @@ export default {
       markGoods: [], // 所有的标注物品
       activeMarkGoods: {
         // 当前标注物品
-        name: null,
-        description: null,
-        type: null,
-        attrs: null
+        projectMaterialName: null,
+        projectMaterialInstruction: null,
+        projectMaterialChoose: null,
+        projectPropertyName: null
       },
       activeMarkGoodsFormRules: {
-        name: [
+        projectMaterialName: [
           { required: true, message: '请在属性栏选择属性', trigger: 'blur' }
         ],
-        description: [
+        projectMaterialInstruction: [
           { required: true, message: '请输入提示词', trigger: 'blur' }
         ],
-        type: [
+        projectMaterialChoose: [
           { required: true, message: '选择标注类型', trigger: 'blur' }
         ],
-        attrs: [
+        projectPropertyName: [
           { required: true, message: '输入不能为空,属性之间使用/分割开', trigger: 'blur' }
         ]
       }
@@ -112,14 +112,14 @@ export default {
       if (this.markGoods[index] !== undefined) {
         this.activeMarkGoods = this.markGoods[index];
       } else {
-        this.activeMarkGoods.description = null;
-        this.activeMarkGoods.type = null;
-        this.activeMarkGoods.attrs = null;
+        this.activeMarkGoods.projectMaterialInstruction = null;
+        this.activeMarkGoods.projectMaterialChoose = null;
+        this.activeMarkGoods.projectPropertyName = null;
       }
     },
     // 确定添加标注物品
     submitActiveMarkGoods(name) {
-      this.activeMarkGoods.name = this.activeName;
+      this.activeMarkGoods.projectMaterialName = this.activeName;
       this.$refs[name].validate((valid) => {
         if (valid) {
           if (confirm("确认提交？")) {
@@ -142,10 +142,10 @@ export default {
       this.activeName = null;
       this.activeNameIndex = null;
       this.activeMarkGoods = {
-        name: null,
-        description: null,
-        type: null,
-        attrs: null
+        projectMaterialName: null,
+        projectMaterialInstruction: null,
+        projectMaterialChoose: null,
+        projectPropertyName: null
       };
     }
   },

@@ -5,21 +5,29 @@
     </section>
     <section class="container">
       <transition name="transition-main" mode="out-in">
-        <keep-alive>
-          <router-view></router-view>
-        </keep-alive>
+        <router-view></router-view>
       </transition>
     </section>
   </div>
 </template>
 <script>
   import NavBar from '@/components/NavBar'
+  import { getSession } from '@/utils/util.js'
+  import { mapMutations } from 'vuex'
   export default {
     components: {
       'nav-bar': NavBar
     },
     data () {
       return {}
+    },
+    methods: {
+      ...mapMutations(['updatePriviledgeList'])
+    },
+    mounted () {
+      // 防止刷新后清空VUEX权限
+      let privilegeList = getSession('privilegeList')
+      this.updatePriviledgeList(privilegeList.split(','))
     }
   }
 </script>

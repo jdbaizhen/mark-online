@@ -31,6 +31,43 @@ export const axiosFormat = (url, method, data = null) => {
     })
   }
 }
+//请求头带项目id
+export const axiosProjectFormat = (url, method, projectId, data = null) => {
+  let token = getSession('token')
+  if (method == 'post') {
+    return axios({
+      url,
+      method,
+      headers: {
+        'token': token,
+        'projectId': projectId
+      },
+      data
+    })
+  } else {
+    return axios({
+      url,
+      method,
+      headers: {
+        'token': token,
+        'projectId': projectId
+      }
+    })
+  }
+}
+// 上传文件
+export const axiosPostFile = (url, data) => {
+  let token = getSession('token')
+  return axios({
+    url,
+    method: 'post',
+    headers: {
+      'token': token,
+      'Content-Type':'application/x-www-form-urlencoded'
+    },
+    data
+  })
+}
 /**
  *  Number
  */
@@ -104,4 +141,15 @@ export const getCookie = (cname) => {
 
 export const clearCookie = (cname) => {  
   setCookie(cname, "", -1) 
+}
+
+/**
+ * 权限分配: list是权限数组， current是当前权限
+ */
+export const assignPrivilege = (list, current) => {
+  if (list.indexOf(current) !== -1) {
+    return true
+  } else {
+    return false
+  }
 }

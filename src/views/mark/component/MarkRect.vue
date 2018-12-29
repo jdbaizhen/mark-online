@@ -5,9 +5,10 @@
       :x="item.x*scale" :y="item.y*scale"
       :width="item.w*scale" :height="item.h*scale"
       @mousedown="moveRectStart(index, $event)"
-      @click.stop="changeActiveRect(index)"
+      @click.stop="changeActiveRect(index, item.id)"
       @mouseup.stop="moveRectEnd"
-      :fill="svgColor" :stroke="svgColor"
+      :fill="item.status===1?'red':item.status===2?'green':svgColor" 
+      :stroke="item.status===1?'red':item.status===2?'green':svgColor"
       :cursor="markType===1?'move':''"
       :fill-opacity="opacityNumber"
       style="stroke-width:2;stroke-opacity:1;"/>
@@ -25,6 +26,7 @@
 
 <script>
 import vm from '@/utils/vm.js'
+import { mapMutations } from 'vuex'
 import MarkFixedRect from './utils/MarkFixedRect.vue'
 export default {
   props: ['svgColor', 'opacityNumber', 'scale', 'rects', 'markType', 'fixPoints', 'activeRect'],
@@ -35,6 +37,7 @@ export default {
     return {}
   },
   methods: {
+    ...mapMutations(['updateActiveRectId']),
     moveRectStart (index, $event) {
       if (this.markType === 1) {
         $event.stopPropagation()
@@ -44,8 +47,11 @@ export default {
     moveRectEnd () {
       vm.$emit('dragRectEnd')
     },
-    changeActiveRect (index) {
+    changeActiveRect (index, id) {
       vm.$emit('changeActiveRect', index)
+      if (id) {
+        this.updateActiveRectId(id)
+      }
     }
   }
 }
